@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ton Booster d'anniversaire est prêt à être ouvert !</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-light: #fefcff;
+            --accent-pink: #ff69b4;
+            --accent-gold: #ffc107;
+            --text-dark: #333333;
+            --green-button: #4CAF50;
+            --card-width: 250px;
+            --card-height: 340px;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(180deg, #fff3f8 0%, var(--bg-light) 100%);
+            color: var(--text-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow: hidden;
+            perspective: 1500px;
+        }
+        
+        #pack-screen, #cards-screen, #final-screen {
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+        }
+        
+        #final-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 1.2s ease-in;
+            /* AJOUTEZ OU AJUSTEZ CECI POUR L'ESPACE */
+            gap: 30px; /* Augmente l'espace entre le titre, le texte et les boutons */
+        }
+        
+        #cards-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.4s ease-out;
+            justify-content: center; 
+            min-height: 80vh;
+            position: relative;
+        }
+
+        .card-ui-wrapper {
+            position: absolute;
+            top: calc(50% + var(--card-height) / 2 + 25px);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            opacity: 0;
+            transition: opacity 0.6s ease-out;
+            pointer-events: none; 
+        }
+
+        .card-ui-wrapper.visible {
+            opacity: 1;
+        }
+
+        .card-ui-wrapper.active {
+    pointer-events: auto; /* Sera activé après le délai JS */
+}
+        
+        #draw-prompt {
+            white-space: nowrap;
+        }
+        
+        #pack-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            min-height: 80vh;
+            animation: fadeInScreen 1s ease-out forwards;
+        }
+
+        @keyframes fadeInScreen {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes float-breathe {
+            0% { transform: translateY(0) rotateZ(0deg); }
+            50% { transform: translateY(-5px) rotateZ(-0.5deg); }
+            100% { transform: translateY(0) rotateZ(0deg); }
+        }
+
+        #pack-screen h1 {
+            font-size: clamp(2em, 6vw, 2.5em);
+            line-height: 1.2;
+            margin-bottom: 20px;
+            color: var(--accent-pink);
+            transition: opacity 0.4s ease-out;
+        }
+        
+        #pack-container { 
+            position: relative; 
+            width: var(--card-width); 
+            height: var(--card-height); 
+            transform-style: preserve-3d;
+        }
+
+        #pack-image {
+            width: 100%; height: 100%;
+            border-radius: 20px;
+            display: flex; align-items: center; justify-content: center;
+            position: relative; overflow: hidden;
+            background: linear-gradient(135deg, var(--accent-pink) 0%, #ff85a1 100%);
+            box-shadow: 0 15px 35px rgba(255, 105, 180, 0.5);
+            font-size: 1.8em; font-weight: bold; color: var(--bg-light);
+            z-index: 10;
+            transition: transform 0.7s ease, opacity 0.7s ease;
+            animation: 
+                pack-glow 2s ease-in-out infinite alternate,
+                float-breathe 4s ease-in-out infinite alternate; 
+        }
+        
+        @keyframes auto-sheen { 0% { transform: skewX(-25deg) translateX(-350px); } 100% { transform: skewX(-25deg) translateX(350px); }}
+
+        #pack-image::before {
+            content: ''; position: absolute; top: -50px; left: -100px;
+            width: 70px; height: 200%;
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
+            pointer-events: none; animation: auto-sheen 2.2s infinite linear;
+        }
+
+        @keyframes pack-glow { from { box-shadow: 0 15px 35px rgba(255, 105, 180, 0.5); } to { box-shadow: 0 20px 45px rgba(255, 105, 180, 0.8); }}
+        
+        #pack-image.opening { transform: scale(0.9) rotateZ(15deg); opacity: 0; }
+        
+        #card-wrapper {
+            width: var(--card-width); height: var(--card-height);
+            position: absolute; top: 0;
+            opacity: 0;
+            transform: rotateY(180deg);
+            backface-visibility: hidden;
+        }
+
+        @keyframes flip-in {
+            from {
+                transform: rotateY(180deg) scale(0.7);
+                opacity: 0;
+            }
+            to {
+                transform: rotateY(0deg) scale(1);
+                opacity: 1;
+            }
+        }
+
+        #card-wrapper.visible {
+            animation: flip-in 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+
+        #card-wrapper.has-flipped {
+            opacity: 1;
+            transform: rotateY(0deg) scale(1);
+        }
+
+        .card {
+            width: 100%; height: 100%; border-radius: 20px;
+            display: flex; flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            position: relative; overflow: hidden;
+            background: linear-gradient(160deg, var(--bg-light) 0%, #fff8f8 100%);
+            color: var(--text-dark); border: 4px solid var(--accent-pink);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            box-sizing: border-box; text-align: center;
+        }
+        .card h3 { margin: 0 0 10px 0; font-size: 1.5em; color: var(--accent-pink); } /* Titre des cartes, augmenté et avec une marge en bas */
+        .card p { margin-top: 10px; font-size: 1.25em; } /* Contenu des cartes, augmenté */
+
+        .card-change-transition { animation: card-glow-out 0.4s forwards; }
+        @keyframes card-glow-out { 
+            0% { opacity: 1; transform: scale(1) rotate(0deg); box-shadow: 0 0 10px var(--accent-gold); border-radius: 20px; } 
+            100% { opacity: 0; transform: scale(0.9) rotate(-15deg); box-shadow: 0 0 30px var(--accent-gold); border-radius: 20px; } 
+        }
+        .card-change-active { animation: card-glow-in 0.4s forwards; opacity: 0; }
+        @keyframes card-glow-in { 
+            0% { opacity: 0; transform: scale(0.9) rotate(15deg); border-radius: 20px; } 
+            100% { opacity: 1; transform: scale(1) rotate(0deg); border-radius: 20px; } 
+        }
+
+        .action-button { 
+            padding: 15px 30px; 
+            font-size: 1.2em; 
+            border: none; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            transition: transform 0.3s ease, box-shadow 0.3s ease; 
+            font-weight: bold; 
+            width: 100%; 
+            max-width: 280px; 
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15); 
+            transform: translateY(0);
+        }
+
+        .action-button:hover { 
+            transform: translateY(0); 
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15); 
+        }
+
+        .action-button:active { 
+            transition: transform 0.05s ease-out, box-shadow 0.05s ease-out; 
+            transform: translateY(5px); 
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3); 
+        }
+        
+        #open-button { 
+            background-color: var(--accent-pink); 
+            color: white; 
+            margin-top: 30px; 
+            transition: opacity 0.4s ease-out; 
+        }
+        
+        h2 { font-size: 1.8em; margin: 0; }
+        #draw-button { 
+            background-color: var(--accent-gold); 
+            color: var(--text-dark); 
+        }
+
+        #pack-screen.is-opening h1, #pack-screen.is-opening #open-button { opacity: 0; }
+
+        #final-screen { justify-content: center; min-height: 80vh; }
+        #final-screen h2, #final-screen p, #final-screen .action-button {
+            opacity: 0;
+            transition: opacity 1.2s ease-in; 
+        }
+        #final-screen.is-active h2 { opacity: 1; transition-delay: 0.5s; }
+        #final-screen p { 
+            font-weight: 500;
+            /* AJOUTER CECI */
+            margin-bottom: 20px; 
+        }
+        #final-screen.is-active p { opacity: 1; transition-delay: 1.2s; }
+        #final-screen.is-active #download-button { opacity: 1; transition-delay: 1.8s; }
+        #final-screen.is-active #restart-button { opacity: 1; transition-delay: 2.1s; }
+
+        #download-button { 
+            background-color: var(--green-button); 
+            color: white; 
+            margin-bottom: 0px; 
+            text-decoration: none;
+            padding: 18px 30px; 
+            box-shadow: 0 8px 15px rgba(76, 175, 80, 0.4); 
+        }
+        #download-button:hover {
+             box-shadow: 0 8px 15px rgba(76, 175, 80, 0.4);
+        }
+        #download-button:active {
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        #restart-button { 
+            background-color: var(--accent-pink); 
+            color: white; 
+            padding: 18px 30px;
+            margin-top: 15px; 
+            box-shadow: 0 8px 15px rgba(255, 105, 180, 0.3); 
+        }
+        #restart-button:hover {
+            box-shadow: 0 8px 15px rgba(255, 105, 180, 0.3);
+        }
+        #restart-button:active {
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3) !important;
+        }
+    #draw-prompt.smaller-text {
+            font-size: 1.2em; /* Diminution de la taille de la police */
+            font-style: italic; /* Mise en italique */
+            font-weight: 400; /* Assurez-vous que ce n'est pas trop gras */
+            color: #666; /* Rend la couleur un peu plus subtile */
+        }
+        .action-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: translateY(0) !important;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1) !important;
+        }
+
+    </style>
+</head>
+<body>
+
+    <section id="pack-screen">
+        <h1>Ton Booster d'anniversaire est prêt à être ouvert !</h1>
+        <div id="pack-container">
+            <div id="pack-image"> CAMSOU BOOSTER </div>
+            <div id="card-wrapper">
+                <div class="card">
+                    <h3 id="card-title"></h3>
+                    <p id="card-content"></p>
+                </div>
+            </div>
+        </div>
+        <button id="open-button" class="action-button">Ouvrir le BOOSTER !</button>
+    </section>
+
+    <section id="cards-screen">
+        <div class="card-ui-wrapper">
+            <h2 id="draw-prompt">Prêt(e) pour le tirage ?</h2>
+            <button id="draw-button" class="action-button"></button>
+        </div>
+    </section>
+
+    <section id="final-screen">
+        <h2>🎉 Pack Opening Terminé ! 🎉</h2>
+        <p style="font-size: 1.1em;"> 
+    J'espère que cette petite surprise t'a plu ! Le plus important maintenant, c'est de profiter à fond de ta journée, de tes proches, et bien sûr... de ton cadeau !<br><br>
+    Joyeux Anniversaire Camille 💖
+</p>
+        <a id="download-button"
+   class="action-button"
+   href="carte-cadeau.pdf"
+   download="Carte_Cadeau_Camille.pdf"
+   target="_blank"> Télécharge ta<br>Carte Cadeau 🎁
+</a>
+        <button id="restart-button" class="action-button" onclick="restartApp()">Recommencer<br>le Tirage &#x27f6;</button>
+    </section>
+
+    <script>
+        const packScreen = document.getElementById('pack-screen');
+        const cardsScreen = document.getElementById('cards-screen');
+        const finalScreen = document.getElementById('final-screen');
+        const openButton = document.getElementById('open-button');
+        const drawButton = document.getElementById('draw-button');
+        const drawPrompt = document.getElementById('draw-prompt');
+        const packContainer = document.getElementById('pack-container');
+        const packImage = document.getElementById('pack-image');
+        const cardWrapper = document.getElementById('card-wrapper');
+        const cardTitle = document.getElementById('card-title');
+        const cardContent = document.getElementById('card-content');
+        let cardIndex = 0;
+        let allCards = [];
+
+        // =======================================================
+        // LISTE FINALE DES 10 CARTES
+        // =======================================================
+        const cardDefinitions = [
+            // Carte 1
+            { title: "Soutien Tactique ! 🤖", content: "Je t'offre une mini-tourelle de Torbjörn... aussi petite et redoutable que toi !" },
+            // Carte 2
+            { title: "Pause Gourmande 🍪", content: "Cette carte peut être échangée contre un cookie Columbus. À réclamer dès que t'en as envie !" },
+            // Carte 3
+            { title: "Bataillon d'Exploration ⚔️", content: "Pour la liberté de fêter cette journée comme il se doit : Shinzou wo Sasageyo !" },
+            // Carte 4
+            { title: "Alerte Bubble Tea ! 🧋", content: "Cette carte a un seul effet : te donner une envie irrépressible de Bubble Tea." },
+            // Carte 5
+            { title: "Un intrus dans le booster ?! 🐾", content: "On dirait que Yuki s'est faufilé ici ! Il a sûrement senti que ce booster était pour quelqu'un d'exceptionnel." },
+            // Carte 6
+            { title: "Bon pour un Festin ! 🍣", content: "Parfois, la seule solution aux problèmes de la vie, c'est les sushis. C'est tout." },
+            // Carte 7
+            { title: "Ton Vrai Super-Pouvoir 💪", content: "Je suis sincèrement admiratif de la force que tu te forges chaque jour." },
+            // Carte 8
+            { title: "Joker : Nuit Blanche 🌙", content: "Peu importe l'heure, si tu as besoin de parler, n'hésite pas. Je suis là." },
+            // Carte 9
+            { title: "Confession ✨", content: "Juste au cas où tu l'oublierais... tu es une personne absolument géniale." },
+            // Carte 10 - La Carte Cadeau
+            { title: "SUPRISE ?? 🎁", content: 'Pour te faire plaisir :<br><strong style="font-size: 1.2em; color: var(--accent-pink);">CARTE CADEAU 15€</strong><br>Chez <strong>Fnac</strong> 🎶📚🎬<br>À toi de choisir ce qui te fait kiffer !' }
+        ];
+
+         function initializeApp() {
+            allCards = [...cardDefinitions]; cardIndex = 0;
+            packScreen.insertBefore(packContainer, openButton);
+            packScreen.style.display = 'flex';
+            cardsScreen.style.display = 'none';
+            finalScreen.style.display = 'none';
+            packImage.classList.remove('opening');
+            cardWrapper.classList.remove('visible', 'card-change-transition', 'card-change-active', 'has-flipped');
+            packScreen.classList.remove('is-opening');
+            cardsScreen.classList.remove('is-active'); 
+            finalScreen.classList.remove('is-active');
+            finalScreen.style.opacity = '0';
+            openButton.disabled = false;
+openButton.style.pointerEvents = "auto"; 
+
+            const cardUiWrapper = document.querySelector('.card-ui-wrapper');
+            if (cardUiWrapper) {
+                // On s'assure qu'il n'est pas cliquable/visible au démarrage
+                cardUiWrapper.classList.remove('visible', 'active');
+                drawButton.disabled = true;
+            }
+        }
+        window.onload = initializeApp;
+
+        function restartApp() {
+            finalScreen.style.opacity = '0';
+            setTimeout(initializeApp, 400);
+        }
+
+        function launchConfetti() {
+            if (window.confetti) { window.confetti({ particleCount: 200, spread: 120, origin: { y: 0.6 }, colors: ['#ff69b4', '#ffc107', '#ffffff'] }); }
+        }
+        
+         openButton.addEventListener('click', () => {
+            openButton.disabled = true;
+    openButton.style.pointerEvents = "none"; 
+
+    packScreen.classList.add('is-opening');
+    launchConfetti();
+    packImage.classList.add('opening');
+            
+            // 1. Désactiver le bouton (sécurité JS) ET l'UI (sécurité CSS)
+            drawButton.disabled = true; 
+            const cardUiWrapper = document.querySelector('.card-ui-wrapper');
+            cardUiWrapper.classList.remove('visible'); // S'assurer que pointer-events: none est actif
+            
+            // 2. Gérer manuellement la première carte (index 0)
+            const firstCard = allCards[0];
+            cardTitle.innerHTML = firstCard.title;
+            cardContent.innerHTML = firstCard.content;
+            cardIndex++; 
+            updatePromptAndButtonText(); 
+            
+            cardWrapper.classList.add('visible');
+            
+            cardWrapper.addEventListener('animationend', function handler() {
+                cardWrapper.classList.remove('visible');
+                cardWrapper.classList.add('has-flipped');
+                
+                setTimeout(() => {
+                    packScreen.style.display = 'none';
+                    cardsScreen.style.display = 'flex';
+                    cardsScreen.style.opacity = '1';
+                    cardsScreen.appendChild(packContainer); 
+                    cardsScreen.classList.add('is-active');
+                    
+                    setTimeout(() => {
+    // Rendre visible uniquement
+    cardUiWrapper.classList.add('visible'); 
+    
+    // Débloquer vraiment l'UI et le bouton après 2s
+    setTimeout(() => {
+        cardUiWrapper.classList.add('active'); 
+        drawButton.disabled = false;
+    }, 500);
+}, 50);
+                }, 100);
+                
+                cardWrapper.removeEventListener('animationend', handler);
+            });
+        });
+
+        function updatePromptAndButtonText() {
+            const remaining = allCards.length - cardIndex;
+            
+            // Ajout de la classe CSS pour le style plus petit et italique
+            drawPrompt.classList.add('smaller-text'); 
+            
+            if (remaining === 0) {
+                drawPrompt.textContent = "C'est la dernière !";
+                drawButton.textContent = "Terminer l'ouverture";
+                launchConfetti();
+                // Le bouton restera désactivé par updateCardContent, 
+                // mais le clic le fera passer à l'écran final.
+            } else {
+                drawPrompt.textContent = `Cartes restantes : ${remaining} !`;
+                // Utilisation de innerHTML pour que la flèche s'affiche correctement
+                drawButton.innerHTML = 'Carte suivante &#x27f6;'; 
+            }
+        }
+
+         function updateCardContent() {
+            if (cardIndex >= allCards.length) {
+                cardsScreen.style.opacity = '0';
+                setTimeout(() => {
+                    cardsScreen.style.display = 'none';
+                    finalScreen.style.display = 'flex';
+                    finalScreen.style.opacity = '1'; 
+                }, 400);
+                setTimeout(() => {
+                    finalScreen.classList.add('is-active'); 
+                }, 500);
+                return;
+            }
+            
+            // DÉSACTIVER le bouton pour toute la durée de la transition (~0.9s)
+            drawButton.disabled = true; 
+            
+            const animateCardChange = () => {
+                const currentCard = allCards[cardIndex];
+                cardTitle.innerHTML = currentCard.title;
+                cardContent.innerHTML = currentCard.content;
+                cardIndex++;
+                updatePromptAndButtonText();
+                
+                // Réactiver le bouton après 500ms (ce qui est après l'animation "glow-in" de 400ms)
+                if (allCards.length - cardIndex >= 0) {
+                    setTimeout(() => {
+                        drawButton.disabled = false;
+                    }, 500); 
+                }
+            };
+            
+            // Transition de carte
+            cardWrapper.classList.remove('card-change-active');
+            cardWrapper.classList.add('card-change-transition');
+            setTimeout(() => {
+                animateCardChange();
+                cardWrapper.classList.remove('card-change-transition');
+                cardWrapper.classList.add('card-change-active');
+            }, 400); 
+        }
+
+        // MAJ : Assurez-vous que l'écouteur utilise la nouvelle fonction sans argument
+        drawButton.addEventListener('click', () => updateCardContent());
+    </script>
+</body>
+</html>
