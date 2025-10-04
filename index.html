@@ -27,13 +27,18 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            height: 100%; 
             margin: 0;
             text-align: center;
-            padding: 20px;
+            padding: 20px 20px 50px 20px; /* Ajout d'un padding plus grand en bas (50px) */
             box-sizing: border-box;
             overflow: hidden;
             perspective: 1500px;
+        }
+
+        html {
+            height: 100%;
+            min-height: 100%;
         }
         
         #pack-screen, #cards-screen, #final-screen {
@@ -53,21 +58,19 @@
         }
         
         #cards-screen {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            opacity: 0;
-            transition: opacity 0.4s ease-out;
-            justify-content: center; 
-            min-height: 80vh;
-            position: relative;
-        }
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center; /* <-- centré verticalement */
+    min-height: 100vh;
+    padding: 20px;
+    box-sizing: border-box;
+}
 
         .card-ui-wrapper {
-            position: absolute;
-            top: calc(50% + var(--card-height) / 2 + 25px);
-            left: 50%;
-            transform: translateX(-50%);
+            position: relative;
+    left: 0;
+    transform: none; /* <-- supprime le décalage gauche */
             width: 100%;
             max-width: 300px;
             display: flex;
@@ -77,6 +80,8 @@
             opacity: 0;
             transition: opacity 0.6s ease-out;
             pointer-events: none; 
+            margin-top: 30px; /* Ajouter de l'espace après la carte */
+            padding-bottom: 30px; /* Espace en bas pour le scroll */
         }
 
         .card-ui-wrapper.visible {
@@ -97,7 +102,7 @@
             justify-content: center;
             align-items: center;
             gap: 20px;
-            min-height: 80vh;
+            min-height: calc(100vh - 40px);
             animation: fadeInScreen 1s ease-out forwards;
         }
 
@@ -249,7 +254,13 @@
 
         #pack-screen.is-opening h1, #pack-screen.is-opening #open-button { opacity: 0; }
 
-        #final-screen { justify-content: center; min-height: 80vh; }
+        #final-screen { 
+            justify-content: center; 
+            min-height: 100vh; /* Garder 100vh pour le centrage vertical */
+            padding-top: 50px; 
+            padding-bottom: 50px; 
+            box-sizing: border-box;
+        }
         #final-screen h2, #final-screen p, #final-screen .action-button {
             opacity: 0;
             transition: opacity 1.2s ease-in; 
@@ -449,8 +460,8 @@ openButton.style.pointerEvents = "auto";
                     packScreen.style.display = 'none';
                     cardsScreen.style.display = 'flex';
                     cardsScreen.style.opacity = '1';
-                    cardsScreen.appendChild(packContainer); 
-                    cardsScreen.classList.add('is-active');
+                    cardsScreen.insertBefore(packContainer, cardsScreen.firstChild);
+cardsScreen.classList.add('is-active');
                     
                     setTimeout(() => {
     // Rendre visible uniquement
